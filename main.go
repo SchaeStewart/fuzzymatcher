@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	. "github.com/kkdai/trigram"
+	"github.com/kkdai/trigram"
 	"github.com/tidwall/gjson"
 )
 
@@ -41,7 +41,7 @@ func main() {
 	// `#` is like * but for lists
 
 	for _, f1Item := range f1Result {
-		ti := NewTrigramIndex()
+		ti := trigram.NewTrigramIndex()
 		ti.Add(f1Item.String())
 		for _, f2Item := range f2Result {
 			ret := ti.Query(f2Item.String())
