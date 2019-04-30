@@ -21,6 +21,23 @@ Multiple selector support
 - Test against pull permits
 */
 
+func printResults(r results) {
+	fmt.Println("[")
+	for i, result := range r {
+		fmt.Println("[")
+		fmt.Println(result[0], ",")
+		fmt.Print(result[1])
+		if i < len(r)-1 {
+			fmt.Println("],")
+		} else {
+			fmt.Println("]")
+		}
+	}
+	fmt.Println("]")
+}
+
+type results [][2]gjson.Result
+
 func readJSON(path string) gjson.Result {
 	jsonFile, err := os.Open(path)
 	if err != nil {
@@ -47,17 +64,18 @@ func main() {
 	f1Result := readJSON(file1).Array()
 	f2Result := readJSON(file2).Array()
 
+	var res results
 	for _, r1 := range f1Result {
 		ti := trigram.NewTrigramIndex()
 		ti.Add(r1.Get(file1Selector).String())
 		for _, r2 := range f2Result {
 			ret := ti.Query(r2.Get(file2Selector).String())
 			if len(ret) > 0 {
-				// TODO: save results in struct
-				// Print results at end
-				fmt.Println(r1.String())
-				fmt.Println(r2.String())
+				res = append(res, [2]gjson.Result{r1.Get("@pretty"), r2.Get("@pretty")})
 			}
 		}
 	}
+
+	printResults(res)
+
 }
