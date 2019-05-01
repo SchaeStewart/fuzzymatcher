@@ -38,6 +38,19 @@ func (r *results) print() {
 	fmt.Println("]")
 }
 
+func (r *results) match(f1Result []gjson.Result, f2Result []gjson.Result, file1Selector string, file2Selector string) {
+	for _, r1 := range f1Result {
+		ti := trigram.NewTrigramIndex()
+		ti.Add(r1.Get(file1Selector).String())
+		for _, r2 := range f2Result {
+			ret := ti.Query(r2.Get(file2Selector).String())
+			if len(ret) > 0 {
+				*r = append(*r, [2]gjson.Result{r1.Get("@pretty"), r2.Get("@pretty")})
+			}
+		}
+	}
+}
+
 func readJSON(path string) gjson.Result {
 	jsonFile, err := os.Open(path)
 	if err != nil {
@@ -64,22 +77,10 @@ func init() {
 }
 
 func main() {
-
 	f1Result := readJSON(file1).Array()
 	f2Result := readJSON(file2).Array()
 
-	var res results
-	for _, r1 := range f1Result {
-		ti := trigram.NewTrigramIndex()
-		ti.Add(r1.Get(file1Selector).String())
-		for _, r2 := range f2Result {
-			ret := ti.Query(r2.Get(file2Selector).String())
-			if len(ret) > 0 {
-				res = append(res, [2]gjson.Result{r1.Get("@pretty"), r2.Get("@pretty")})
-			}
-		}
-	}
-
-	res.print()
-
+	var r results
+	r.match(f1Result, f2Result, file1Selector, file2Selector)
+	r.print()
 }
