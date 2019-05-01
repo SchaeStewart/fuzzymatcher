@@ -21,6 +21,18 @@ Multiple selector support
 - Test against pull permits
 */
 
+func readJSON(path string) gjson.Result {
+	jsonFile, err := os.Open(path)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer jsonFile.Close()
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	return gjson.ParseBytes(byteValue)
+}
+
 type results [][2]gjson.Result
 
 func (r *results) print() {
@@ -49,18 +61,6 @@ func (r *results) match(f1Result []gjson.Result, f2Result []gjson.Result, file1S
 			}
 		}
 	}
-}
-
-func readJSON(path string) gjson.Result {
-	jsonFile, err := os.Open(path)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer jsonFile.Close()
-
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-
-	return gjson.ParseBytes(byteValue)
 }
 
 var file1 string
