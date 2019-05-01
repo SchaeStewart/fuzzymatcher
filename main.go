@@ -21,13 +21,15 @@ Multiple selector support
 - Test against pull permits
 */
 
-func printResults(r results) {
+type results [][2]gjson.Result
+
+func (r *results) print() {
 	fmt.Println("[")
-	for i, result := range r {
+	for i, result := range *r {
 		fmt.Println("[")
 		fmt.Println(result[0], ",")
 		fmt.Print(result[1])
-		if i < len(r)-1 {
+		if i < len(*r)-1 {
 			fmt.Println("],")
 		} else {
 			fmt.Println("]")
@@ -35,8 +37,6 @@ func printResults(r results) {
 	}
 	fmt.Println("]")
 }
-
-type results [][2]gjson.Result
 
 func readJSON(path string) gjson.Result {
 	jsonFile, err := os.Open(path)
@@ -76,6 +76,6 @@ func main() {
 		}
 	}
 
-	printResults(res)
+	res.print()
 
 }
