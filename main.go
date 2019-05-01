@@ -50,16 +50,20 @@ func readJSON(path string) gjson.Result {
 	return gjson.ParseBytes(byteValue)
 }
 
-func main() {
-	var file1 string
-	var file1Selector string
-	var file2 string
-	var file2Selector string
+var file1 string
+var file1Selector string
+var file2 string
+var file2Selector string
+
+func init() {
 	flag.StringVar(&file1, "file1", "", "the first file")
 	flag.StringVar(&file1Selector, "file1-selector", "", "the first file")
 	flag.StringVar(&file2, "file2", "", "the second file")
 	flag.StringVar(&file2Selector, "file2-selector", "", "Test")
 	flag.Parse()
+}
+
+func main() {
 
 	f1Result := readJSON(file1).Array()
 	f2Result := readJSON(file2).Array()
