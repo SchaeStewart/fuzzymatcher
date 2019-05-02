@@ -4,9 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
+	"strings"
 
 	"github.com/kkdai/trigram"
+
 	"github.com/tidwall/gjson"
 )
 
@@ -46,30 +49,66 @@ func (r *results) print() {
 	fmt.Println("]")
 }
 
-func (r *results) match(f1Result []gjson.Result, f2Result []gjson.Result, file1Selector string, file2Selector string) {
-	for _, r1 := range f1Result {
-		ti := trigram.NewTrigramIndex()
-		ti.Add(r1.Get(file1Selector).String())
-		for _, r2 := range f2Result {
-			ret := ti.Query(r2.Get(file2Selector).String())
-			if len(ret) > 0 {
-				*r = append(*r, [2]gjson.Result{r1.Get("@pretty"), r2.Get("@pretty")})
+func (r *results) match(f1Result []gjson.Result, f2Result []gjson.Result, file1Selectors []string, file2Selectors []string) {
+	if len(file1Selectors) != len(file2Selectors) {
+		// TODO: return error instead of failing
+		log.Fatal("You must have the same number of selectors in file1Selectors and file2Selectors")
+	}
+
+	f1SearchTerms := make(map[int][]gjson.Result, len(f1Result))
+	tIdxs := make([][]*trigram.TrigramIndex, len(f1Result))
+	f2SearchTerms := make(map[int][]gjson.Result, len(f2Result))
+
+	for f1Idx, f1R := range f1Result {
+		terms := gjson.GetMany(f1R.String(), file1Selectors...)
+		f1SearchTerms[f1Idx] = terms
+
+		tis := make([]*trigram.TrigramIndex, len(terms))
+		for i, term := range terms {
+			ti := trigram.NewTrigramIndex()
+			ti.Add(term.String())
+			tis[i] = ti
+		}
+		tIdxs[f1Idx] = tis
+	}
+
+	for f2Idx, f2R := range f2Result {
+		f2SearchTerms[f2Idx] = gjson.GetMany(f2R.String(), file2Selectors...)
+	}
+
+	var matchIds []struct{ f1Idx, f2Idx int }
+	for f2Idx, f2Term := range f2SearchTerms {
+		for f1Idx, tis := range tIdxs {
+			for termIdx, term := range f2Term {
+				ret := tis[termIdx].Query(term.String())
+				if len(ret) == 0 {
+					break
+				}
+				matchIds = append(matchIds, struct{ f1Idx, f2Idx int }{f1Idx, f2Idx})
 			}
 		}
+	}
+
+	for _, ids := range matchIds {
+		*r = append(*r, [2]gjson.Result{f1Result[ids.f1Idx].Get("@pretty"), f2Result[ids.f2Idx].Get("@pretty")})
 	}
 }
 
 var file1 string
-var file1Selector string
+var file1Selectors []string
 var file2 string
-var file2Selector string
+var file2Selectors []string
 
 func init() {
+	var file1Selector string
+	var file2Selector string
 	flag.StringVar(&file1, "file1", "", "the first file")
 	flag.StringVar(&file1Selector, "file1-selector", "", "the first file")
 	flag.StringVar(&file2, "file2", "", "the second file")
 	flag.StringVar(&file2Selector, "file2-selector", "", "Test")
 	flag.Parse()
+	file1Selectors = strings.Split(file1Selector, ",")
+	file2Selectors = strings.Split(file2Selector, ",")
 }
 
 func main() {
@@ -77,6 +116,6 @@ func main() {
 	f2Result := readJSON(file2).Array()
 
 	var r results
-	r.match(f1Result, f2Result, file1Selector, file2Selector)
+	r.match(f1Result, f2Result, file1Selectors, file2Selectors)
 	r.print()
 }
