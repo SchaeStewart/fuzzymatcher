@@ -49,15 +49,12 @@ func (r *results) print() {
 	fmt.Println("]")
 }
 
-func (r *results) match(f1Result []gjson.Result, f2Result []gjson.Result, file1Selectors []string, file2Selectors []string) {
-	if len(file1Selectors) != len(file2Selectors) {
-		// TODO: return error instead of failing
-		log.Fatal("You must have the same number of selectors in file1Selectors and file2Selectors")
-	}
+type resultMap map[int][]gjson.Result
 
-	f1SearchTerms := make(map[int][]gjson.Result, len(f1Result))
+func createSearchTerms(f1Result []gjson.Result, f2Result []gjson.Result) (resultMap, resultMap, [][]*trigram.TrigramIndex) {
+	f1SearchTerms := make(resultMap, len(f1Result))
 	tIdxs := make([][]*trigram.TrigramIndex, len(f1Result))
-	f2SearchTerms := make(map[int][]gjson.Result, len(f2Result))
+	f2SearchTerms := make(resultMap, len(f2Result))
 
 	for f1Idx, f1R := range f1Result {
 		terms := gjson.GetMany(f1R.String(), file1Selectors...)
@@ -75,6 +72,17 @@ func (r *results) match(f1Result []gjson.Result, f2Result []gjson.Result, file1S
 	for f2Idx, f2R := range f2Result {
 		f2SearchTerms[f2Idx] = gjson.GetMany(f2R.String(), file2Selectors...)
 	}
+
+	return f1SearchTerms, f2SearchTerms, tIdxs
+}
+
+func (r *results) Match(f1Result []gjson.Result, f2Result []gjson.Result, file1Selectors []string, file2Selectors []string) {
+	if len(file1Selectors) != len(file2Selectors) {
+		// TODO: return error instead of failing
+		log.Fatal("You must have the same number of selectors in file1Selectors and file2Selectors")
+	}
+
+	_, f2SearchTerms, tIdxs := createSearchTerms(f1Result, f2Result)
 
 	var matchIds []struct{ f1Idx, f2Idx int }
 	for f2Idx, f2Term := range f2SearchTerms {
@@ -116,6 +124,6 @@ func main() {
 	f2Result := readJSON(file2).Array()
 
 	var r results
-	r.match(f1Result, f2Result, file1Selectors, file2Selectors)
+	r.Match(f1Result, f2Result, file1Selectors, file2Selectors)
 	r.print()
 }
