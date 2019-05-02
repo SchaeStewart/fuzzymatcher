@@ -13,11 +13,7 @@ import (
 /* TODO:
 Ensure users know that both files must be arrays
 Flag help messages
-Better search algorith:
-- Create a list of all TrigramIndexes for r1
-- For each item in r2, compare against each item in list of TrigramIndexes
 Multiple selector support
-- Store results in array and print array after complete
 - Test against pull permits
 */
 
